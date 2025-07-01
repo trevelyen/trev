@@ -1,6 +1,6 @@
 'use client'
 import React, { useRef, useState } from 'react';
-import { Globe } from 'lucide-react';
+import { Globe, Plus, Sun, Moon } from 'lucide-react';
 
 const MENU_OPTIONS = [
   { label: 'New', action: 'new' },
@@ -42,7 +42,7 @@ function DropdownMenu({ onSelect, open, setOpen, anchorRef }: {
   ) : null;
 }
 
-function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNode, onRenameNode, onMoveNode, connections, onConnectStart, onConnectEnd, connectingFromId, selectedNodeId, onSelectNode }: {
+function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNode, onRenameNode, onMoveNode, connections, onConnectStart, onConnectEnd, connectingFromId, selectedNodeId, onSelectNode, darkMode }: {
   onCursorChange: (pos: { x: number, y: number } | null) => void,
   nodes: { x: number, y: number, id: number, name?: string }[],
   editingNodeId: number | null,
@@ -55,6 +55,7 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
   connectingFromId: number | null,
   selectedNodeId?: number | null,
   onSelectNode?: (id: number | null) => void,
+  darkMode?: boolean,
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -120,13 +121,13 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
   for (let i = 0; i <= cols; i++) {
     const x = 1 + i * gridSize;
     lines.push(
-      <line key={`v${x}`} x1={x} y1={1} x2={x} y2={1 + rows * gridSize} stroke="#cbd5e1" strokeWidth={1.2} />
+      <line key={`v${x}`} x1={x} y1={1} x2={x} y2={1 + rows * gridSize} stroke={darkMode ? "#334155" : "#cbd5e1"} strokeWidth={1.2} />
     );
   }
   for (let j = 0; j <= rows; j++) {
     const y = 1 + j * gridSize;
     lines.push(
-      <line key={`h${y}`} x1={1} y1={y} x2={1 + cols * gridSize} y2={y} stroke="#cbd5e1" strokeWidth={1.2} />
+      <line key={`h${y}`} x1={1} y1={y} x2={1 + cols * gridSize} y2={y} stroke={darkMode ? "#334155" : "#cbd5e1"} strokeWidth={1.2} />
     );
   }
   lines.unshift(
@@ -137,7 +138,7 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
       width={cols * gridSize}
       height={rows * gridSize}
       fill="none"
-      stroke="#64748b"
+      stroke={darkMode ? "#64748b" : "#64748b"}
       strokeWidth={2}
       rx={0}
     />
@@ -194,7 +195,7 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
     const labelY = y + nodeHeight / 2 - labelHeight / 2;
     return (
       <g key={node.id}
-        style={{ cursor: isEditing ? 'text' : 'grab' }}
+        style={{ cursor: isEditing ? 'text' : 'pointer' }}
         onPointerDown={e => handleNodePointerDown(e, node)}
         onClick={e => {
           if (e.altKey) {
@@ -211,47 +212,41 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
           }
         }}
       >
-        {/* Node background with glassmorphism effect */}
+        {/* Node background: glassy, subtle, less cartoonish */}
         <rect
           x={x}
           y={y}
           width={nodeWidth}
           height={nodeHeight}
-          rx={22}
-          fill="url(#nodeGradient)"
+          rx={14}
+          fill={darkMode ? 'url(#nodeGradientDark)' : 'url(#nodeGradientModern)'}
           stroke={selectedNodeId === node.id
-            ? (connectingFromId === node.id ? "#60a5fa" : "#4f8cff")
-            : "#2563eb"}
+            ? (connectingFromId === node.id ? '#60a5fa' : '#4f8cff')
+            : (darkMode ? '#334155' : '#2563eb')}
           strokeWidth={selectedNodeId === node.id
-            ? (connectingFromId === node.id ? 5 : 4)
-            : 2.5}
+            ? (connectingFromId === node.id ? 4 : 3.5)
+            : 2}
           filter="url(#nodeShadow)"
-          opacity={0.95}
-          style={{ transition: 'stroke 0.15s, stroke-width 0.15s' }}
+          opacity={darkMode ? 0.98 : 0.97}
+          style={{ transition: 'stroke 0.15s, stroke-width 0.15s', boxShadow: darkMode ? '0 2px 16px #0f172a44' : '0 2px 16px #4f8cff22' }}
         />
-        {/* Node border highlight */}
+        {/* Minimal border highlight */}
         <rect
-          x={x + 2}
-          y={y + 2}
-          width={nodeWidth - 4}
-          height={nodeHeight - 4}
-          rx={18}
+          x={x + 1.5}
+          y={y + 1.5}
+          width={nodeWidth - 3}
+          height={nodeHeight - 3}
+          rx={12}
           fill="none"
           stroke={selectedNodeId === node.id
-            ? (connectingFromId === node.id ? "#60a5fa" : "#4f8cff")
-            : "url(#nodeBorderGradient)"}
-          strokeWidth={selectedNodeId === node.id
-            ? (connectingFromId === node.id ? 4 : 3)
-            : 2}
-          opacity={0.9}
+            ? (connectingFromId === node.id ? '#60a5fa' : '#4f8cff')
+            : (darkMode ? 'url(#nodeBorderGradientDark)' : 'url(#nodeBorderGradientModern)')}
+          strokeWidth={selectedNodeId === node.id ? 2.5 : 1.5}
+          opacity={0.7}
           style={{ transition: 'stroke 0.15s, stroke-width 0.15s' }}
         />
-        {/* Decorative icon */}
-        <g opacity={0.18}>
-          <circle cx={x + nodeWidth - 28} cy={y + 28} r={18} fill="#fff" />
-          <rect x={x + nodeWidth - 44} y={y + 14} width={32} height={8} rx={4} fill="#fff" />
-        </g>
-        {/* Capsule label background with shadow */}
+        {/* Remove cartoonish icon, keep it minimal */}
+        {/* Capsule label background with subtle shadow */}
         {!isEditing && (
           <rect
             x={labelX}
@@ -259,9 +254,9 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
             width={labelWidth}
             height={labelHeight}
             rx={labelHeight / 2}
-            fill="#fff"
+            fill={darkMode ? '#1e293b' : '#f8fafc'}
             filter="url(#nodeLabelShadow)"
-            opacity={0.98}
+            opacity={darkMode ? 0.98 : 0.98}
           />
         )}
         {isEditing ? (
@@ -285,11 +280,11 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
             x={x + nodeWidth / 2}
             y={y + nodeHeight / 2 + 8}
             textAnchor="middle"
-            fill="#2563eb"
-            fontWeight="bold"
-            fontSize={22}
+            fill={darkMode ? '#e0e7ef' : '#2563eb'}
+            fontWeight="600"
+            fontSize={20}
             fontFamily="'Inter', 'Segoe UI', 'Arial', sans-serif"
-            style={{ cursor: 'pointer', userSelect: 'none', letterSpacing: 0.5 }}
+            style={{ cursor: 'pointer', userSelect: 'none', letterSpacing: 0.2 }}
             onClick={() => onEditNode(node.id)}
           >
             {label}
@@ -338,21 +333,6 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
     }
   };
 
-  // Keyboard event for deleting selected node
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Delete' && selectedNodeId != null) {
-        if (window.confirm('Delete selected node?')) {
-          if (onSelectNode) onSelectNode(null);
-          // Remove node and its connections
-          onMoveNode(selectedNodeId, -1, -1); // Optionally, or handle in parent
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNodeId, onSelectNode, onMoveNode]);
-
   return (
     <div className="w-full h-full flex items-center justify-center select-none overflow-hidden relative" style={{ outline: 'none', background: 'transparent' }}>
       <div ref={containerRef} className="relative flex items-center justify-center w-full h-full">
@@ -361,7 +341,7 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
           height={rows * gridSize + 2}
           style={{
             display: 'block',
-            background: 'white',
+            background: darkMode ? '#1e293b' : 'white',
             margin: 'auto',
             maxWidth: '100%',
             maxHeight: '100%',
@@ -374,18 +354,26 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
         >
           <defs>
             <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#4f8cff" floodOpacity="0.18" />
+              <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor={darkMode ? '#0ea5e9' : '#4f8cff'} floodOpacity="0.13" />
             </filter>
             <filter id="nodeLabelShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#2563eb" floodOpacity="0.10" />
+              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor={darkMode ? '#64748b' : '#2563eb'} floodOpacity="0.10" />
             </filter>
-            <linearGradient id="nodeGradient" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#e0e7ff" />
-              <stop offset="100%" stopColor="#bae6fd" />
+            <linearGradient id="nodeGradientModern" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#f1f5f9" />
+              <stop offset="100%" stopColor="#dbeafe" />
             </linearGradient>
-            <linearGradient id="nodeBorderGradient" x1="0" y1="0" x2="1" y2="1">
+            <linearGradient id="nodeGradientDark" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#334155" />
+              <stop offset="100%" stopColor="#0f172a" />
+            </linearGradient>
+            <linearGradient id="nodeBorderGradientModern" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stopColor="#4f8cff" />
               <stop offset="100%" stopColor="#6ee7b7" />
+            </linearGradient>
+            <linearGradient id="nodeBorderGradientDark" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#bae6fd" />
+              <stop offset="100%" stopColor="#64748b" />
             </linearGradient>
             <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" markerUnits="strokeWidth">
               <polygon points="0 0, 10 3.5, 0 7" fill="#4f8cff" />
@@ -412,6 +400,7 @@ export default function HomePage() {
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [availableSaves, setAvailableSaves] = useState<{ key: string, name: string, time: number }[]>([]);
   const [currentSaveName, setCurrentSaveName] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   const handleMenuSelect = async (action: string) => {
     switch (action) {
@@ -596,25 +585,47 @@ export default function HomePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNodeId, handleDeleteSelectedNode]);
 
+  React.useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   return (
-    <div className="min-h-screen bg-[#f7f9fb] flex flex-col">
-      <header className="h-16 bg-white/80 border-b border-gray-200 flex items-center px-8 shadow-sm backdrop-blur-md relative z-20">
+    <div className={"min-h-screen flex flex-col " + (darkMode ? 'dark bg-gray-900' : 'bg-[#f7f9fb]')}> 
+      <header className={"h-16 border-b flex items-center px-8 shadow-sm backdrop-blur-md relative z-20 " + (darkMode ? 'bg-gray-900/80 border-gray-800' : 'bg-white/80 border-gray-200')}> 
         <div ref={globeRef} className="w-10 h-10 bg-gradient-to-tr from-[#4f8cff] to-[#6ee7b7] rounded-xl flex items-center justify-center shadow-md cursor-pointer relative z-30" onClick={() => setMenuOpen(v => !v)}>
           <Globe className="w-6 h-6 text-white" />
           <DropdownMenu open={menuOpen} setOpen={setMenuOpen} onSelect={handleMenuSelect} anchorRef={globeRef} />
         </div>
-        <span className="ml-4 text-2xl font-bold text-blue-700 tracking-tight select-none">Backend Graph</span>
+        <span className={"ml-4 text-2xl font-bold tracking-tight select-none " + (darkMode ? 'text-blue-200' : 'text-blue-700')}>Backend Graph</span>
         {cursorPos && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-700 text-sm font-mono bg-white/80 px-3 py-1 rounded shadow border border-gray-200">
+          <div className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-mono px-3 py-1 rounded shadow border " + (darkMode ? 'text-gray-200 bg-gray-800/80 border-gray-700' : 'text-gray-700 bg-white/80 border-gray-200')}>
             ({cursorPos.x}, {cursorPos.y})
           </div>
         )}
-        <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center space-x-2">
-          <button className="px-4 py-2 rounded bg-[#4f8cff] text-white font-semibold shadow hover:bg-[#2563eb] transition-colors" onClick={handleAddNode}>Add Node</button>
+        {/* Options Dock */}
+        <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center space-x-2 bg-white/0 dark:bg-gray-900/0 rounded-xl p-1">
+          <button
+            className="p-2 rounded-full bg-[#4f8cff] text-white shadow hover:bg-[#2563eb] transition-colors flex items-center justify-center"
+            title="Add Node"
+            onClick={handleAddNode}
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+          <button
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={() => setDarkMode(d => !d)}
+          >
+            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
         </div>
       </header>
       <main className="flex-1 p-8 flex relative z-10">
-        <div className="flex-1 bg-white rounded-3xl shadow-xl flex items-center justify-center p-8 relative z-10">
+        <div className={"flex-1 rounded-3xl shadow-xl flex items-center justify-center p-8 relative z-10 " + (darkMode ? 'bg-gray-900' : 'bg-white')}> 
           <InfiniteGridWithNodes
             onCursorChange={setCursorPos}
             nodes={nodes}
@@ -628,12 +639,13 @@ export default function HomePage() {
             connectingFromId={connectingFromId}
             selectedNodeId={selectedNodeId}
             onSelectNode={setSelectedNodeId}
+            darkMode={darkMode}
           />
           {/* Load Modal */}
           {loadModalOpen && (
             <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[320px] max-w-[90vw]">
-                <h2 className="text-xl font-bold mb-4 text-blue-700">Load a Saved Graph</h2>
+              <div className={"rounded-2xl shadow-2xl p-8 min-w-[320px] max-w-[90vw] " + (darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white')}> 
+                <h2 className={"text-xl font-bold mb-4 " + (darkMode ? 'text-blue-200' : 'text-blue-700')}>Load a Saved Graph</h2>
                 {availableSaves.length === 0 ? (
                   <div className="text-gray-500 mb-4">No saves found.</div>
                 ) : (
@@ -641,7 +653,7 @@ export default function HomePage() {
                     {availableSaves.map(s => (
                       <li key={s.key} className="flex items-center group">
                         <button
-                          className="flex-1 text-left px-4 py-2 rounded hover:bg-blue-50 font-mono text-blue-700 flex justify-between items-center"
+                          className={"flex-1 text-left px-4 py-2 rounded font-mono flex justify-between items-center " + (darkMode ? 'text-blue-200 hover:bg-blue-900' : 'text-blue-700 hover:bg-blue-50')}
                           onClick={() => handleLoadFromSave(s.key)}
                         >
                           <span>{s.name}</span>
@@ -657,7 +669,7 @@ export default function HomePage() {
                           </span>
                         </button>
                         <button
-                          className="ml-2 px-2 py-1 rounded hover:bg-red-100 text-red-500 text-xs font-bold opacity-70 group-hover:opacity-100 transition"
+                          className={"ml-2 px-2 py-1 rounded text-xs font-bold opacity-70 group-hover:opacity-100 transition " + (darkMode ? 'hover:bg-red-900 text-red-400' : 'hover:bg-red-100 text-red-500')}
                           title="Delete this save"
                           onClick={e => { e.stopPropagation(); handleDeleteSave(s.key); }}
                         >
@@ -667,7 +679,7 @@ export default function HomePage() {
                     ))}
                   </ul>
                 )}
-                <button className="mt-2 px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold" onClick={() => setLoadModalOpen(false)}>Cancel</button>
+                <button className={"mt-2 px-4 py-2 rounded font-semibold " + (darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-100' : 'bg-gray-200 hover:bg-gray-300 text-gray-700')} onClick={() => setLoadModalOpen(false)}>Cancel</button>
               </div>
             </div>
           )}
