@@ -42,7 +42,7 @@ function DropdownMenu({ onSelect, open, setOpen, anchorRef }: {
   ) : null;
 }
 
-function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNode, onRenameNode, onMoveNode, connections, onConnectStart, onConnectEnd, connectingFromId, selectedNodeId, onSelectNode, darkMode, setConnections }: {
+function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNode, onRenameNode, onMoveNode, connections, onConnectStart, onConnectEnd, connectingFromId, selectedNodeId, onSelectNode, darkMode, setConnections, onAddNodeAt, onSelectMultipleNodes, multiSelectedNodeIds }: {
   onCursorChange: (pos: { x: number, y: number } | null) => void,
   nodes: { x: number, y: number, id: number, name?: string }[],
   editingNodeId: number | null,
@@ -56,15 +56,40 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
   selectedNodeId?: number | null,
   onSelectNode?: (id: number | null) => void,
   darkMode?: boolean,
-  setConnections: React.Dispatch<React.SetStateAction<{from: number, to: number}[]>>
+  setConnections: React.Dispatch<React.SetStateAction<{from: number, to: number}[]>>,
+  onAddNodeAt?: (x: number, y: number) => void,
+  onSelectMultipleNodes?: (ids: number[]) => void,
+  multiSelectedNodeIds?: number[]
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [cursor, setCursor] = useState<{ x: number, y: number } | null>(null);
   const [showCrosshair, setShowCrosshair] = useState(false);
-  const [dragging, setDragging] = useState<null | { id: number, offsetX: number, offsetY: number }> (null);
+  // Mouse/touch event handlers for dragging
+  // Extend dragging state to support multi-drag
+  type DraggingState =
+    | { id: number; offsetX: number; offsetY: number; multi: false }
+    | { id: number; offsetX: number; offsetY: number; multi: true; initialPositions: { id: number; x: number; y: number }[] };
+  const [dragging, setDragging] = useState<DraggingState | null>(null);
   // Add shakingNodeId state for shake animation
   const [shakingNodeId, setShakingNodeId] = useState<number | null>(null);
+  // Rectangle selection state
+  const [selectionRect, setSelectionRect] = useState<null | { x1: number, y1: number, x2: number, y2: number }>(null);
+  const [selecting, setSelecting] = useState(false);
+
+  // --- Fix: Multi-drag initial positions ref ---
+  const multiDragInitialPositionsRef = React.useRef<{ id: number; x: number; y: number }[] | null>(null);
+
+  // Prevent text selection while dragging selection rectangle
+  React.useEffect(() => {
+    if (selecting) {
+      const handle = (e: Event) => {
+        e.preventDefault();
+      };
+      document.addEventListener('selectstart', handle, { passive: false });
+      return () => document.removeEventListener('selectstart', handle);
+    }
+  }, [selecting]);
 
   React.useEffect(() => {
     if (containerRef.current) {
@@ -111,6 +136,16 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
     const gridY = Math.max(0, Math.min(rows, Math.round(py / gridSize)));
     setCursor({ x: gridX, y: gridY });
     onCursorChange({ x: gridX, y: gridY });
+  };
+
+  // Double click to add node at nearest grid position
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const rect = (e.target as SVGElement).getBoundingClientRect();
+    const px = Math.round(e.clientX - rect.left - 1);
+    const py = Math.round(e.clientY - rect.top - 1);
+    const gridX = Math.max(0, Math.min(cols - 4, Math.round(px / gridSize)));
+    const gridY = Math.max(0, Math.min(rows - 3, Math.round(py / gridSize)));
+    if (onAddNodeAt) onAddNodeAt(gridX, gridY);
   };
 
   // Calculate grid size to fit the available space, but center the grid
@@ -196,6 +231,8 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
     const labelHeight = 38;
     const labelX = x + nodeWidth / 2 - labelWidth / 2;
     const labelY = y + nodeHeight / 2 - labelHeight / 2;
+    // Highlight if multi-selected
+    const isMultiSelected = multiSelectedNodeIds && multiSelectedNodeIds.includes(node.id);
     return (
       <g key={node.id}
         style={{
@@ -205,6 +242,8 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
         onPointerDown={e => handleNodePointerDown(e, node)}
         onClick={e => {
           e.stopPropagation();
+          // If multi-select is active, do not override selection
+          if (multiSelectedNodeIds && multiSelectedNodeIds.length > 0) return;
           const isCtrlOrCmd = e.ctrlKey || e.metaKey;
           const isAltOrOpt = e.altKey;
           if (isAltOrOpt) {
@@ -247,13 +286,13 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
           width={nodeWidth}
           height={nodeHeight}
           rx={14}
-          fill={darkMode ? 'url(#nodeGradientDark)' : 'url(#nodeGradientModern)'}
-          stroke={selectedNodeId === node.id
+          fill={isMultiSelected ? (darkMode ? '#2563eb' : '#4f8cff') : (darkMode ? 'url(#nodeGradientDark)' : 'url(#nodeGradientModern)')}
+          stroke={isMultiSelected ? (darkMode ? '#bae6fd' : '#2563eb') : (selectedNodeId === node.id
             ? (connectingFromId === node.id ? '#60a5fa' : '#4f8cff')
-            : (darkMode ? '#334155' : '#2563eb')}
-          strokeWidth={selectedNodeId === node.id
+            : (darkMode ? '#334155' : '#2563eb'))}
+          strokeWidth={isMultiSelected ? 4 : (selectedNodeId === node.id
             ? (connectingFromId === node.id ? 4 : 3.5)
-            : 2}
+            : 2)}
           filter="url(#nodeShadow)"
           opacity={darkMode ? 0.98 : 0.97}
           style={{ transition: 'stroke 0.15s, stroke-width 0.15s', boxShadow: darkMode ? '0 2px 16px #0f172a44' : '0 2px 16px #4f8cff22' }}
@@ -266,9 +305,7 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
           height={nodeHeight - 3}
           rx={12}
           fill="none"
-          stroke={selectedNodeId === node.id
-            ? (connectingFromId === node.id ? '#60a5fa' : '#4f8cff')
-            : (darkMode ? 'url(#nodeBorderGradientDark)' : 'url(#nodeBorderGradientModern)')}
+          stroke={selectedNodeId === node.id ? (connectingFromId === node.id ? '#60a5fa' : '#4f8cff') : (darkMode ? 'url(#nodeBorderGradientDark)' : 'url(#nodeBorderGradientModern)')}
           strokeWidth={selectedNodeId === node.id ? 2.5 : 1.5}
           opacity={0.7}
           style={{ transition: 'stroke 0.15s, stroke-width 0.15s' }}
@@ -332,11 +369,31 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
     const py = e.clientY - rect.top - 1;
     const nodeX = 1 + node.x * gridSize;
     const nodeY = 1 + node.y * gridSize;
-    setDragging({
-      id: node.id,
-      offsetX: px - nodeX,
-      offsetY: py - nodeY,
-    });
+    
+    if (multiSelectedNodeIds && multiSelectedNodeIds.length > 1 && multiSelectedNodeIds.includes(node.id)) {
+      // Store ALL initial positions of selected nodes
+      const initialPositions = nodes
+        .filter(n => multiSelectedNodeIds.includes(n.id))
+        .map(n => ({ id: n.id, x: n.x, y: n.y }));
+      
+      multiDragInitialPositionsRef.current = initialPositions;
+      
+      setDragging({
+        id: node.id,
+        offsetX: px - nodeX,
+        offsetY: py - nodeY,
+        multi: true,
+        initialPositions // kept for type compatibility
+      });
+    } else {
+      setDragging({
+        id: node.id,
+        offsetX: px - nodeX,
+        offsetY: py - nodeY,
+        multi: false
+      });
+      multiDragInitialPositionsRef.current = null;
+    }
     (e.target as Element).setPointerCapture(e.pointerId);
   };
 
@@ -347,18 +404,93 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
     const rect = svg.getBoundingClientRect();
     const px = e.clientX - rect.left - 1;
     const py = e.clientY - rect.top - 1;
-    // Snap to grid
-    let gridX = Math.round((px - dragging.offsetX) / gridSize);
-    let gridY = Math.round((py - dragging.offsetY) / gridSize);
-    gridX = Math.max(0, Math.min(cols - 4, gridX));
-    gridY = Math.max(0, Math.min(rows - 3, gridY));
-    onMoveNode(dragging.id, gridX, gridY);
+    
+    if (dragging.multi && multiDragInitialPositionsRef.current) {
+      // Calculate the desired position of the primary node being dragged
+      const primaryNodeStartPos = multiDragInitialPositionsRef.current.find(p => p.id === dragging.id);
+      if (!primaryNodeStartPos) return;
+      
+      // Calculate mouse position in grid coordinates
+      const mouseGridX = Math.round((px - dragging.offsetX) / gridSize);
+      const mouseGridY = Math.round((py - dragging.offsetY) / gridSize);
+      
+      // Calculate total delta from starting position
+      const deltaX = mouseGridX - primaryNodeStartPos.x;
+      const deltaY = mouseGridY - primaryNodeStartPos.y;
+      
+      // Update all nodes in the selection
+      multiDragInitialPositionsRef.current.forEach(initPos => {
+        // Calculate new position with boundary check
+        const newX = Math.max(0, Math.min(cols - 4, initPos.x + deltaX));
+        const newY = Math.max(0, Math.min(rows - 3, initPos.y + deltaY));
+        
+        // Update node position through the callback
+        onMoveNode(initPos.id, newX, newY);
+      });
+    } else {
+      // Single node drag - use the regular approach
+      const gridX = Math.round((px - dragging.offsetX) / gridSize);
+      const gridY = Math.round((py - dragging.offsetY) / gridSize);
+      const boundedX = Math.max(0, Math.min(cols - 4, gridX));
+      const boundedY = Math.max(0, Math.min(rows - 3, gridY));
+      onMoveNode(dragging.id, boundedX, boundedY);
+    }
   };
 
   const handlePointerUp = () => {
     if (dragging) {
       setDragging(null);
+      multiDragInitialPositionsRef.current = null;
     }
+  };
+
+  // Mouse down on SVG to start selection
+  const handleSvgPointerDown = (e: React.PointerEvent) => {
+    // Only left click, and not on a node
+    if (e.button !== 0) return;
+    if (e.target instanceof SVGElement && e.target.tagName === 'svg') {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const px = Math.round(e.clientX - rect.left - 1);
+      const py = Math.round(e.clientY - rect.top - 1);
+      setSelectionRect({ x1: px, y1: py, x2: px, y2: py });
+      setSelecting(true);
+    }
+  };
+
+  // Mouse move to update selection rectangle
+  const handleSvgPointerMove = (e: React.PointerEvent) => {
+    if (!selecting || !selectionRect) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = Math.round(e.clientX - rect.left - 1);
+    const py = Math.round(e.clientY - rect.top - 1);
+    setSelectionRect(sel => sel ? { ...sel, x2: px, y2: py } : null);
+  };
+
+  // Mouse up to finish selection
+  const handleSvgPointerUp = () => {
+    if (selecting && selectionRect) {
+      // Calculate selection bounds
+      const minX = Math.min(selectionRect.x1, selectionRect.x2);
+      const minY = Math.min(selectionRect.y1, selectionRect.y2);
+      const maxX = Math.max(selectionRect.x1, selectionRect.x2);
+      const maxY = Math.max(selectionRect.y1, selectionRect.y2);
+      // Find nodes within selection
+      const selectedIds = nodes.filter(node => {
+        const x = 1 + node.x * gridSize;
+        const y = 1 + node.y * gridSize;
+        const nodeWidth = gridSize * 4;
+        const nodeHeight = gridSize * 3;
+        return (
+          x + nodeWidth > minX &&
+          x < maxX &&
+          y + nodeHeight > minY &&
+          y < maxY
+        );
+      }).map(n => n.id);
+      if (onSelectMultipleNodes) onSelectMultipleNodes(selectedIds);
+    }
+    setSelecting(false);
+    setSelectionRect(null);
   };
 
   return (
@@ -376,9 +508,11 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
           }}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => { setCursor(null); onCursorChange(null); }}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
+          onPointerMove={e => { handlePointerMove(e); handleSvgPointerMove(e); }}
+          onPointerUp={() => { handlePointerUp(); handleSvgPointerUp(); }}
+          onPointerDown={handleSvgPointerDown}
           onClick={() => { if (onSelectNode) onSelectNode(null); }}
+          onDoubleClick={handleDoubleClick}
         >
           <defs>
             <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -410,6 +544,19 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
           {lines}
           {connectionElements}
           {nodeElements}
+          {/* Selection rectangle */}
+          {selectionRect && (
+            <rect
+              x={Math.min(selectionRect.x1, selectionRect.x2)}
+              y={Math.min(selectionRect.y1, selectionRect.y2)}
+              width={Math.abs(selectionRect.x2 - selectionRect.x1)}
+              height={Math.abs(selectionRect.y2 - selectionRect.y1)}
+              fill={darkMode ? 'rgba(79,140,255,0.18)' : 'rgba(79,140,255,0.13)'}
+              stroke={darkMode ? '#4f8cff' : '#2563eb'}
+              strokeWidth={2}
+              style={{ pointerEvents: 'none' }}
+            />
+          )}
         </svg>
       </div>
     </div>
@@ -436,6 +583,8 @@ export default function HomePage() {
     return false;
   });
   const [showLoader, setShowLoader] = useState(true);
+  // Add state for multi-selection
+  const [multiSelectedNodeIds, setMultiSelectedNodeIds] = useState<number[]>([]);
 
   React.useEffect(() => {
     // Show loader for at least 300ms to prevent flashing
@@ -568,6 +717,15 @@ export default function HomePage() {
     ]);
     setEditingNodeId(newId);
   };
+  // Add handler for adding node at a specific grid position
+  const handleAddNodeAt = (x: number, y: number) => {
+    const newId = nodes.length > 0 ? Math.max(...nodes.map(n => n.id)) + 1 : 1;
+    setNodes(nodes => [
+      ...nodes,
+      { x, y, id: newId }
+    ]);
+    setEditingNodeId(newId);
+  };
   const handleEditNode = (id: number) => setEditingNodeId(id);
   const handleRenameNode = (id: number, name: string) => {
     setNodes(nodes => nodes.map(n => n.id === id ? { ...n, name: name.trim() || undefined } : n));
@@ -608,7 +766,7 @@ export default function HomePage() {
     if (selectedNodeId == null) return;
     const node = nodes.find(n => n.id === selectedNodeId);
     if (!node) return;
-    if (!confirm(`Delete node "${node.name || node.id}"? This will also remove its connections.`)) return;
+    // Remove confirm prompt
     setNodes(nodes => nodes.filter(n => n.id !== selectedNodeId));
     setConnections(conns => conns.filter(c => c.from !== selectedNodeId && c.to !== selectedNodeId));
     setSelectedNodeId(null);
@@ -710,6 +868,9 @@ export default function HomePage() {
             onSelectNode={setSelectedNodeId}
             darkMode={darkMode}
             setConnections={setConnections}
+            multiSelectedNodeIds={multiSelectedNodeIds}
+            onAddNodeAt={handleAddNodeAt}
+            onSelectMultipleNodes={setMultiSelectedNodeIds}
           />
           {/* Load Modal */}
           {loadModalOpen && (
