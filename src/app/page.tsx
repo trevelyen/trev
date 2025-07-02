@@ -42,7 +42,7 @@ function DropdownMenu({ onSelect, open, setOpen, anchorRef }: {
   ) : null;
 }
 
-function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNode, onRenameNode, onMoveNode, connections, onConnectStart, onConnectEnd, connectingFromId, selectedNodeId, onSelectNode, darkMode }: {
+function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNode, onRenameNode, onMoveNode, connections, onConnectStart, onConnectEnd, connectingFromId, selectedNodeId, onSelectNode, darkMode, setConnections }: {
   onCursorChange: (pos: { x: number, y: number } | null) => void,
   nodes: { x: number, y: number, id: number, name?: string }[],
   editingNodeId: number | null,
@@ -56,12 +56,15 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
   selectedNodeId?: number | null,
   onSelectNode?: (id: number | null) => void,
   darkMode?: boolean,
+  setConnections: React.Dispatch<React.SetStateAction<{from: number, to: number}[]>>
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [cursor, setCursor] = useState<{ x: number, y: number } | null>(null);
   const [showCrosshair, setShowCrosshair] = useState(false);
   const [dragging, setDragging] = useState<null | { id: number, offsetX: number, offsetY: number }> (null);
+  // Add shakingNodeId state for shake animation
+  const [shakingNodeId, setShakingNodeId] = useState<number | null>(null);
 
   React.useEffect(() => {
     if (containerRef.current) {
@@ -195,20 +198,45 @@ function InfiniteGridWithNodes({ onCursorChange, nodes, editingNodeId, onEditNod
     const labelY = y + nodeHeight / 2 - labelHeight / 2;
     return (
       <g key={node.id}
-        style={{ cursor: isEditing ? 'text' : 'pointer' }}
+        style={{
+          cursor: isEditing ? 'text' : 'pointer',
+          animation: shakingNodeId === node.id ? 'shake 0.3s' : undefined
+        }}
         onPointerDown={e => handleNodePointerDown(e, node)}
         onClick={e => {
-          if (e.altKey) {
-            e.stopPropagation();
-            if (onSelectNode) onSelectNode(node.id); // select on alt click too
-            if (connectingFromId == null) {
-              onConnectStart(node.id);
-            } else if (connectingFromId !== node.id) {
-              onConnectEnd(node.id);
+          e.stopPropagation();
+          const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+          const isAltOrOpt = e.altKey;
+          if (isAltOrOpt) {
+            // Remove preceding connection if exists
+            const incoming = connections.filter((c) => c.to === node.id);
+            if (incoming.length > 0) {
+              // Remove the most recent (last) incoming connection
+              const lastConn = incoming[incoming.length - 1];
+              setConnections((conns: {from: number, to: number}[]) => conns.filter(c => c !== lastConn));
+            } else {
+              // Try to reconnect to the node it was most recently connected to
+              const outgoing = connections.filter((c) => c.from === node.id);
+              if (outgoing.length > 0) {
+                const lastOut = outgoing[outgoing.length - 1];
+                setConnections((conns: {from: number, to: number}[]) => {
+                  const filtered = conns.filter(c => c !== lastOut);
+                  return [...filtered, lastOut];
+                });
+              } else {
+                // Shake the node (visual feedback)
+                setShakingNodeId(node.id);
+                setTimeout(() => setShakingNodeId(null), 500);
+              }
             }
+            return;
+          }
+          if (connectingFromId != null && connectingFromId !== node.id && isCtrlOrCmd) {
+            if (onConnectEnd) onConnectEnd(node.id);
+            if (onSelectNode) onSelectNode(null);
           } else {
-            e.stopPropagation();
             if (onSelectNode) onSelectNode(node.id);
+            if (onConnectStart) onConnectStart(node.id);
           }
         }}
       >
@@ -607,6 +635,23 @@ export default function HomePage() {
     }
   }, [darkMode]);
 
+  // Add shake animation keyframes to the component or global CSS
+  const shakeStyle = `
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+    100% { transform: translateX(0); }
+  }`;
+  if (typeof window !== 'undefined' && !document.getElementById('shake-keyframes')) {
+    const style = document.createElement('style');
+    style.id = 'shake-keyframes';
+    style.innerHTML = shakeStyle;
+    document.head.appendChild(style);
+  }
+
   if (showLoader) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-[9999] transition-opacity duration-300">
@@ -624,7 +669,7 @@ export default function HomePage() {
           <Globe className="w-6 h-6 text-white" />
           <DropdownMenu open={menuOpen} setOpen={setMenuOpen} onSelect={handleMenuSelect} anchorRef={globeRef} />
         </div>
-        <span className={"ml-4 text-2xl font-bold tracking-tight select-none " + (darkMode ? 'text-blue-200' : 'text-blue-700')}>Backend Graph</span>
+        <span className={"ml-4 text-2xl font-bold tracking-tight select-none " + (darkMode ? 'text-blue-200' : 'text-blue-700')}>Backend</span>
         {cursorPos && (
           <div className={"absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-mono px-3 py-1 rounded shadow border " + (darkMode ? 'text-gray-200 bg-gray-800/80 border-gray-700' : 'text-gray-700 bg-white/80 border-gray-200')}>
             ({cursorPos.x}, {cursorPos.y})
@@ -664,6 +709,7 @@ export default function HomePage() {
             selectedNodeId={selectedNodeId}
             onSelectNode={setSelectedNodeId}
             darkMode={darkMode}
+            setConnections={setConnections}
           />
           {/* Load Modal */}
           {loadModalOpen && (
