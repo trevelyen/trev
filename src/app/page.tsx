@@ -400,7 +400,20 @@ export default function HomePage() {
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [availableSaves, setAvailableSaves] = useState<{ key: string, name: string, time: number }[]>([]);
   const [currentSaveName, setCurrentSaveName] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('darkMode');
+      if (stored !== null) return stored === 'true';
+    }
+    return false;
+  });
+  const [showLoader, setShowLoader] = useState(true);
+
+  React.useEffect(() => {
+    // Show loader for at least 300ms to prevent flashing
+    const timeout = setTimeout(() => setShowLoader(false), 300);
+    return () => clearTimeout(timeout);
+  }, []);
 
   const handleMenuSelect = async (action: string) => {
     switch (action) {
@@ -586,12 +599,23 @@ export default function HomePage() {
   }, [selectedNodeId, handleDeleteSelectedNode]);
 
   React.useEffect(() => {
+    localStorage.setItem('darkMode', darkMode ? 'true' : 'false');
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  if (showLoader) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-[9999] transition-opacity duration-300">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-blue-400 mb-4" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={"min-h-screen flex flex-col " + (darkMode ? 'dark bg-gray-900' : 'bg-[#f7f9fb]')}> 
