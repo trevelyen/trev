@@ -85,7 +85,7 @@ export default function HomePage() {
         className={`relative z-10 ${isMobile ? 'pl-0 pb-16 w-full flex justify-center' : 'pl-20 pb-0'}`}>
         {/* Logo/Brand name */}
         <h1
-          className={`text-8xl mb-8 relative cursor-pointer ${isMobile ? 'text-center' : ''}`}
+          className={`text-6xl mb-8 relative cursor-pointer ${isMobile ? 'text-center' : ''}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onClick={handleLogoClick}>
