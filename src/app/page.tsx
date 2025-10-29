@@ -128,7 +128,7 @@ export default function HomePage() {
               transform: to([style.y, style.scale], (y, scale) => `translate(-50%, calc(-50% + ${y}px)) scale(${scale})`),
               willChange: 'opacity, transform',
             }}
-            className='absolute top-1/2 left-1/2 z-20 max-w-4xl'>
+            className='absolute top-1/2 left-1/2 z-20 w-[calc(100vw-2rem)] max-w-4xl'>
             <animated.div
               className='relative bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-16 shadow-2xl overflow-hidden'
               onClick={(e) => e.stopPropagation()}
