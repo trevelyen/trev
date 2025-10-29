@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* SuperCard gradient animations */
 @keyframes gradient-shift {
@@ -28,30 +28,25 @@
 /* Connection mode pulse animation */
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 20px rgba(100, 181, 246, 0.8), 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 0 20px rgba(100, 181, 246, 0.8), 0 4px 15px rgba(0, 0, 0, 0.2);
   }
   50% {
-    box-shadow: 0 0 30px rgba(100, 181, 246, 1), 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 0 30px rgba(100, 181, 246, 1), 0 4px 15px rgba(0, 0, 0, 0.2);
   }
   100% {
-    box-shadow: 0 0 20px rgba(100, 181, 246, 0.8), 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 0 20px rgba(100, 181, 246, 0.8), 0 4px 15px rgba(0, 0, 0, 0.2);
   }
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: #171717;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }

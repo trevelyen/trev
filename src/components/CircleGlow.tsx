@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { animated, SpringValue } from '@react-spring/web'
 
 interface CircleGlowProps {
@@ -7,6 +8,18 @@ interface CircleGlowProps {
 }
 
 export default function CircleGlow({ glowIntensity }: CircleGlowProps) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   return (
     <div className='absolute inset-[-1px] rounded-xl overflow-hidden pointer-events-none'>
       <animated.video
@@ -16,12 +29,13 @@ export default function CircleGlow({ glowIntensity }: CircleGlowProps) {
         muted
         playsInline
         style={{
+          scale: isMobile ? 2 : 2,
           width: '1500px',
           height: '1580px',
           marginTop: '-790px',
-          marginLeft: '-450px',
+          marginLeft: isMobile ? '-270px' : '-450px',
           filter: glowIntensity.to((v) => `brightness(${1 + v * 0.5})`),
-          objectFit: 'cover',
+          objectFit: 'contain',
         }}>
         <source
           src='/circleGlow.mp4'
