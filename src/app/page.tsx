@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSpring, useTransition, animated, to } from '@react-spring/web'
+import CircleGlow from '@/components/CircleGlow'
 
 export default function HomePage() {
   const [, setMounted] = useState(false)
@@ -82,7 +83,7 @@ export default function HomePage() {
       {/* Main content */}
       <animated.div
         style={springs}
-        className={`relative z-10 ${isMobile ? 'pl-0 pb-16 w-full flex justify-center' : 'pl-20 pb-0'}`}>
+        className={`relative z-10 ${isMobile ? 'pl-0 pb-8 w-full flex justify-center' : 'pl-20 pb-0'}`}>
         {/* Logo/Brand name */}
         <h1
           className={`text-6xl mb-8 relative cursor-pointer ${isMobile ? 'text-center' : ''}`}
@@ -130,50 +131,39 @@ export default function HomePage() {
             }}
             className='absolute top-1/2 left-1/2 z-20 w-[calc(100vw-2rem)] max-w-4xl'>
             <animated.div
-              className={`relative bg-black/60 ${isMobile ? 'backdrop-blur-md' : 'backdrop-blur-xl'} border border-white/10 rounded-xl ${isMobile ? 'p-8' : 'p-16'} shadow-2xl overflow-hidden`}
+              className={`relative rounded-xl ${isMobile ? 'p-8' : 'p-16'} shadow-2xl overflow-hidden`}
               onClick={(e) => e.stopPropagation()}
               onMouseEnter={() => setIsCardHovered(true)}
               onMouseLeave={() => setIsCardHovered(false)}
               style={{
                 boxShadow: style.opacity.to((o) => `0 0 ${60 * o}px rgba(6, 182, 212, ${0.15 * o}), 0 0 ${120 * o}px rgba(168, 85, 247, ${0.1 * o})`),
               }}>
-              {/* Animated circular border glow */}
-              <div className='absolute inset-[-1px] rounded-xl overflow-hidden pointer-events-none'>
-                <animated.div
-                  className='absolute top-1/2 left-1/2 rounded-full'
-                  style={{
-                    width: isMobile ? '512px' : '1024px',
-                    height: isMobile ? '512px' : '1024px',
-                    marginTop: isMobile ? '-256px' : '-512px',
-                    marginLeft: isMobile ? '-256px' : '-512px',
-                    background:
-                      'conic-gradient(from 0deg, transparent 0deg, transparent 90deg, rgba(6, 182, 212, 0) 120deg, rgba(6, 182, 212, 0.8) 180deg, rgba(168, 85, 247, 0.8) 270deg, rgba(6, 182, 212, 0.8) 320deg, rgba(6, 182, 212, 0) 350deg, transparent 360deg)',
-                    animation: 'spin 20s linear infinite',
-                    filter: cardHoverSpring.glowIntensity.to((v) => `brightness(${1 + v * 0.5})`),
-                    willChange: 'transform',
-                  }}
-                />
-              </div>
+              {/* Animated circular border glow - using pre-rendered video */}
+              <CircleGlow glowIntensity={cardHoverSpring.glowIntensity} />
 
               {/* Static border overlay to clean edges */}
               <div className='absolute inset-0 rounded-xl border border-white/10 pointer-events-none' />
 
               {/* Card background layer - covers most of the animated border */}
-              <div className='absolute rounded-xl bg-black backdrop-blur-xl' style={{ inset: '0.5px' }} />
+              <div
+                className='absolute bg-black'
+                style={{ inset: '2px', borderRadius: '10px' }}
+              />
 
               {/* Content */}
-              <div className='relative z-10 text-center text-gray-400' style={{ fontFamily: 'var(--font-manrope)', fontWeight: 400 }}>
+              <div
+                className='relative z-10 text-center text-gray-400'
+                style={{ fontFamily: 'var(--font-manrope)', fontWeight: 400 }}>
                 <p className='text-lg leading-relaxed'>
                   curiosity. vision. unwavering commitment. relentless iteration.
                   <br />
                   <br />
-                  trevelyen is a force for good, injecting meaning in everything we do.
+                  trevelyen is a force for good, injecting meaning into everything we do.
                   <br />
                   <br />
                   <a
-                    href="mailto:dan@trevelyen.com"
-                    className="text-cyan-200/50 hover:text-cyan-300 text-shadow-initial transition-colors"
-                  >
+                    href='mailto:dan@trevelyen.com'
+                    className='text-cyan-200/50 hover:text-cyan-300 text-shadow-initial transition-colors'>
                     connect
                   </a>
                 </p>
