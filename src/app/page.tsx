@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSpring, animated } from '@react-spring/web';
+import { useSpring, useTransition, animated, to } from '@react-spring/web';
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
@@ -42,9 +42,10 @@ export default function HomePage() {
     config: { tension: 300, friction: 40 }
   });
 
-  const cardSpring = useSpring({
-    opacity: showCard ? 1 : 0,
-    transform: showCard ? 'translateX(0)' : 'translateX(100vw)',
+  const cardTransition = useTransition(showCard, {
+    from: { opacity: 0, y: 20, scale: 0.95 },
+    enter: { opacity: 1, y: 0, scale: 1 },
+    leave: { opacity: 0, y: 20, scale: 0.95 },
     config: { tension: 280, friction: 60 }
   });
 
@@ -76,15 +77,15 @@ export default function HomePage() {
       {/* Main content */}
       <animated.div
         style={springs}
-        className={`relative z-10 ${isMobile ? 'pl-0 pb-16' : 'pl-20 pb-0'}`}>
+        className={`relative z-10 ${isMobile ? 'pl-0 pb-16 w-full flex justify-center' : 'pl-20 pb-0'}`}>
         {/* Logo/Brand name */}
         <h1
-          className="text-8xl mb-8 relative cursor-pointer"
+          className={`text-8xl mb-8 relative cursor-pointer ${isMobile ? 'text-center' : ''}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onClick={handleLogoClick}
         >
-          <span className="relative inline-block">
+          <span className="relative inline-block" style={{ marginRight: '-0.15em' }}>
 
             {/* Main text */}
             <animated.span
@@ -118,20 +119,33 @@ export default function HomePage() {
       </animated.div>
 
       {/* Card overlay */}
-      {showCard && (
-        <animated.div
-          style={cardSpring}
-          className="absolute inset-0 flex items-center justify-center z-20"
-        >
-          <div
-            className="bg-black/80 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-8 max-w-2xl mx-4"
-            onClick={(e) => e.stopPropagation()}
+      {cardTransition((style, item) =>
+        item ? (
+          <animated.div
+            style={{
+              opacity: style.opacity,
+              transform: to([style.y, style.scale], (y, scale) => `translate(-50%, calc(-50% + ${y}px)) scale(${scale})`),
+              willChange: 'opacity, transform'
+            }}
+            className="absolute top-1/2 left-1/2 z-20 w-[calc(100vw-2rem)] max-w-2xl"
           >
-          <p className="text-cyan-100/90 text-lg leading-relaxed" style={{ fontFamily: 'var(--font-inter)' }}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-          </p>
-        </div>
-      </animated.div>
+            <div
+              className="relative bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                boxShadow: '0 0 60px rgba(6, 182, 212, 0.15), 0 0 120px rgba(168, 85, 247, 0.1)'
+              }}
+            >
+              {/* Subtle top gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+
+              {/* Content */}
+              <p className="text-gray-100 text-lg leading-relaxed" style={{ fontFamily: 'var(--font-inter)', fontWeight: 300 }}>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+              </p>
+            </div>
+          </animated.div>
+        ) : null
       )}
 
       <style jsx>{`
