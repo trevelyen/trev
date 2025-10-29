@@ -130,7 +130,7 @@ export default function HomePage() {
             }}
             className='absolute top-1/2 left-1/2 z-20 w-[calc(100vw-2rem)] max-w-4xl'>
             <animated.div
-              className='relative bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-16 shadow-2xl overflow-hidden'
+              className={`relative bg-black/60 ${isMobile ? 'backdrop-blur-md' : 'backdrop-blur-xl'} border border-white/10 rounded-xl ${isMobile ? 'p-8' : 'p-16'} shadow-2xl overflow-hidden`}
               onClick={(e) => e.stopPropagation()}
               onMouseEnter={() => setIsCardHovered(true)}
               onMouseLeave={() => setIsCardHovered(false)}
@@ -142,14 +142,15 @@ export default function HomePage() {
                 <animated.div
                   className='absolute top-1/2 left-1/2 rounded-full'
                   style={{
-                    width: '1024px',
-                    height: '1024px',
-                    marginTop: '-512px',
-                    marginLeft: '-512px',
+                    width: isMobile ? '512px' : '1024px',
+                    height: isMobile ? '512px' : '1024px',
+                    marginTop: isMobile ? '-256px' : '-512px',
+                    marginLeft: isMobile ? '-256px' : '-512px',
                     background:
                       'conic-gradient(from 0deg, transparent 0deg, transparent 90deg, rgba(6, 182, 212, 0) 120deg, rgba(6, 182, 212, 0.8) 180deg, rgba(168, 85, 247, 0.8) 270deg, rgba(6, 182, 212, 0.8) 320deg, rgba(6, 182, 212, 0) 350deg, transparent 360deg)',
                     animation: 'spin 20s linear infinite',
                     filter: cardHoverSpring.glowIntensity.to((v) => `brightness(${1 + v * 0.5})`),
+                    willChange: 'transform',
                   }}
                 />
               </div>
