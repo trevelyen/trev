@@ -17,6 +17,9 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "trevelyen",
   description: "trevelyen",
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
