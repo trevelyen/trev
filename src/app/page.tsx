@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSpring, useTransition, animated, to } from '@react-spring/web'
 
 export default function HomePage() {
-  const [mounted, setMounted] = useState(false)
+  const [, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [isCardHovered, setIsCardHovered] = useState(false)
@@ -148,7 +148,7 @@ export default function HomePage() {
                     marginLeft: '-512px',
                     background:
                       'conic-gradient(from 0deg, transparent 0deg, transparent 90deg, rgba(6, 182, 212, 0) 120deg, rgba(6, 182, 212, 0.8) 180deg, rgba(168, 85, 247, 0.8) 270deg, rgba(6, 182, 212, 0.8) 320deg, rgba(6, 182, 212, 0) 350deg, transparent 360deg)',
-                    animation: 'spin 40s linear infinite',
+                    animation: 'spin 20s linear infinite',
                     filter: cardHoverSpring.glowIntensity.to((v) => `brightness(${1 + v * 0.5})`),
                   }}
                 />
@@ -166,7 +166,7 @@ export default function HomePage() {
                   curiosity. vision. unwavering commitment. relentless iteration.
                   <br />
                   <br />
-                  trevelyen is a force for good, injecting meaning and innovation into everything we do.
+                  trevelyen is a force for good, injecting meaning in everything we do.
                   <br />
                   <br />
                   <a
