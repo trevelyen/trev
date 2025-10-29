@@ -1,39 +1,34 @@
-import type { Metadata } from "next";
-import { Inter, Manrope } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Inter, Manrope } from 'next/font/google'
+import './globals.css'
 
 const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-});
+  variable: '--font-inter',
+  subsets: ['latin'],
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+})
 
 const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
+  variable: '--font-manrope',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+})
 
 export const metadata: Metadata = {
-  title: "trevelyen",
-  description: "curiosity. vision. unwavering commitment. relentless iteration.",
-  icons: {
-    icon: '/favicon.png',
-  },
-};
+  title: 'trevelyen',
+  description: 'curiosity. vision. unwavering commitment. relentless iteration.',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-black">
-      <body
-        className={`${inter.variable} ${manrope.variable} antialiased`}
-      >
-        {children}
-      </body>
+    <html
+      lang='en'
+      className='bg-black'>
+      <body className={`${inter.variable} ${manrope.variable} antialiased`}>{children}</body>
     </html>
-  );
+  )
 }
