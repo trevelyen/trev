@@ -16,7 +16,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "trevelyen",
-  description: "trevelyen",
+  description: "curiosity. vision. unwavering commitment. relentless iteration.",
   icons: {
     icon: '/favicon.png',
   },
